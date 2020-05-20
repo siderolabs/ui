@@ -1,0 +1,21 @@
+{
+  "name": "ui",
+  "description": "Enter your project description",
+  "author": {
+    "name": "The Arges Maintainers",
+    "email": "maintainers@arges.dev"
+  },
+  "version": "0.1.0",
+  "binaryname": "ui",
+  "frontend": {
+    "dir": "frontend",
+    "install": "npm install",
+    "build": "npm run build",
+    "bridge": "src",
+    "serve": "npm run serve"
+  },
+  "WailsVersion": "",
+  "CrossCompile": false,
+  "Platform": "",
+  "Architecture": ""
+}

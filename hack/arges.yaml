@@ -1,0 +1,741 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    arges: v1alpha1
+  name: arges-system
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    arges: v1alpha1
+    control-plane: metal-controller-manager
+  name: metal-system
+---
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.2.5
+  creationTimestamp: null
+  labels:
+    arges: v1alpha1
+    control-plane: metal-controller-manager
+  name: environments.metal.arges.dev
+spec:
+  group: metal.arges.dev
+  names:
+    kind: Environment
+    listKind: EnvironmentList
+    plural: environments
+    singular: environment
+  scope: Cluster
+  validation:
+    openAPIV3Schema:
+      description: Environment is the Schema for the environments API
+      properties:
+        apiVersion:
+          description:
+            'APIVersion defines the versioned schema of this representation
+            of an object. Servers should convert recognized schemas to the latest
+            internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+          type: string
+        kind:
+          description:
+            'Kind is a string value representing the REST resource this
+            object represents. Servers may infer this from the endpoint the client
+            submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+          type: string
+        metadata:
+          type: object
+        spec:
+          description: EnvironmentSpec defines the desired state of Environment
+          properties:
+            initrd:
+              properties:
+                sha512:
+                  type: string
+                url:
+                  type: string
+              type: object
+            kernel:
+              properties:
+                args:
+                  items:
+                    type: string
+                  type: array
+                sha512:
+                  type: string
+                url:
+                  type: string
+              type: object
+          type: object
+        status:
+          description: EnvironmentStatus defines the observed state of Environment
+          type: object
+      type: object
+  version: v1alpha1
+  versions:
+    - name: v1alpha1
+      served: true
+      storage: true
+status:
+  acceptedNames:
+    kind: ''
+    plural: ''
+  conditions: []
+  storedVersions: []
+---
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.2.5
+  creationTimestamp: null
+  labels:
+    arges: v1alpha1
+    control-plane: metal-controller-manager
+  name: serverclasses.metal.arges.dev
+spec:
+  group: metal.arges.dev
+  names:
+    kind: ServerClass
+    listKind: ServerClassList
+    plural: serverclasses
+    singular: serverclass
+  scope: Namespaced
+  subresources:
+    status: {}
+  validation:
+    openAPIV3Schema:
+      description: ServerClass is the Schema for the serverclasses API
+      properties:
+        apiVersion:
+          description:
+            'APIVersion defines the versioned schema of this representation
+            of an object. Servers should convert recognized schemas to the latest
+            internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+          type: string
+        kind:
+          description:
+            'Kind is a string value representing the REST resource this
+            object represents. Servers may infer this from the endpoint the client
+            submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+          type: string
+        metadata:
+          type: object
+        spec:
+          description: ServerClassSpec defines the desired state of ServerClass
+          properties:
+            qualifiers:
+              properties:
+                cpu:
+                  items:
+                    properties:
+                      manufacturer:
+                        type: string
+                      version:
+                        type: string
+                    type: object
+                  type: array
+                labelSelectors:
+                  items:
+                    additionalProperties:
+                      type: string
+                    type: object
+                  type: array
+                systemInformation:
+                  items:
+                    properties:
+                      family:
+                        type: string
+                      manufacturer:
+                        type: string
+                      productName:
+                        type: string
+                      serialNumber:
+                        type: string
+                      skuNumber:
+                        type: string
+                      version:
+                        type: string
+                    type: object
+                  type: array
+              type: object
+          required:
+            - qualifiers
+          type: object
+        status:
+          description: ServerClassStatus defines the observed state of ServerClass
+          properties:
+            serversAvailable:
+              items:
+                type: string
+              type: array
+            serversInUse:
+              items:
+                type: string
+              type: array
+          required:
+            - serversAvailable
+            - serversInUse
+          type: object
+      type: object
+  version: v1alpha1
+  versions:
+    - name: v1alpha1
+      served: true
+      storage: true
+status:
+  acceptedNames:
+    kind: ''
+    plural: ''
+  conditions: []
+  storedVersions: []
+---
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.2.5
+  creationTimestamp: null
+  labels:
+    arges: v1alpha1
+    control-plane: metal-controller-manager
+  name: servers.metal.arges.dev
+spec:
+  group: metal.arges.dev
+  names:
+    kind: Server
+    listKind: ServerList
+    plural: servers
+    singular: server
+  scope: Cluster
+  subresources:
+    status: {}
+  validation:
+    openAPIV3Schema:
+      description: Server is the Schema for the servers API
+      properties:
+        apiVersion:
+          description:
+            'APIVersion defines the versioned schema of this representation
+            of an object. Servers should convert recognized schemas to the latest
+            internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+          type: string
+        kind:
+          description:
+            'Kind is a string value representing the REST resource this
+            object represents. Servers may infer this from the endpoint the client
+            submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+          type: string
+        metadata:
+          type: object
+        spec:
+          description: ServerSpec defines the desired state of Server
+          properties:
+            bmc:
+              description: BMC defines data about how to talk to the node via ipmitool
+              properties:
+                endpoint:
+                  type: string
+                pass:
+                  type: string
+                user:
+                  type: string
+              required:
+                - endpoint
+                - pass
+                - user
+              type: object
+            cpu:
+              properties:
+                manufacturer:
+                  type: string
+                version:
+                  type: string
+              type: object
+            system:
+              properties:
+                family:
+                  type: string
+                manufacturer:
+                  type: string
+                productName:
+                  type: string
+                serialNumber:
+                  type: string
+                skuNumber:
+                  type: string
+                version:
+                  type: string
+              type: object
+          type: object
+        status:
+          description: ServerStatus defines the observed state of Server
+          properties:
+            inUse:
+              type: boolean
+          required:
+            - inUse
+          type: object
+      type: object
+  version: v1alpha1
+  versions:
+    - name: v1alpha1
+      served: true
+      storage: true
+status:
+  acceptedNames:
+    kind: ''
+    plural: ''
+  conditions: []
+  storedVersions: []
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  labels:
+    arges: v1alpha1
+    control-plane: metal-controller-manager
+  name: metal-leader-election-role
+  namespace: arges-system
+rules:
+  - apiGroups:
+      - ''
+    resources:
+      - configmaps
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - patch
+      - delete
+  - apiGroups:
+      - ''
+    resources:
+      - configmaps/status
+    verbs:
+      - get
+      - update
+      - patch
+  - apiGroups:
+      - ''
+    resources:
+      - events
+    verbs:
+      - create
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    arges: v1alpha1
+    control-plane: metal-controller-manager
+  name: metal-environment-editor-role
+rules:
+  - apiGroups:
+      - metal.arges.dev
+    resources:
+      - environments
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - metal.arges.dev
+    resources:
+      - environments/status
+    verbs:
+      - get
+      - patch
+      - update
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    arges: v1alpha1
+    control-plane: metal-controller-manager
+  name: metal-proxy-role
+rules:
+  - apiGroups:
+      - authentication.k8s.io
+    resources:
+      - tokenreviews
+    verbs:
+      - create
+  - apiGroups:
+      - authorization.k8s.io
+    resources:
+      - subjectaccessreviews
+    verbs:
+      - create
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    arges: v1alpha1
+    control-plane: metal-controller-manager
+  name: metal-server-editor-role
+rules:
+  - apiGroups:
+      - metal.arges.dev
+    resources:
+      - servers
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - metal.arges.dev
+    resources:
+      - servers/status
+    verbs:
+      - get
+      - patch
+      - update
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    arges: v1alpha1
+    control-plane: metal-controller-manager
+  name: metal-serverclass-editor-role
+rules:
+  - apiGroups:
+      - metal.arges.dev
+    resources:
+      - serverclasses
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - metal.arges.dev
+    resources:
+      - serverclasses/status
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  labels:
+    arges: v1alpha1
+    control-plane: metal-controller-manager
+  name: metal-leader-election-rolebinding
+  namespace: arges-system
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: metal-leader-election-role
+subjects:
+  - kind: ServiceAccount
+    name: default
+    namespace: arges-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  labels:
+    app: metal-metadata-server
+    arges: v1alpha1
+  name: metal-machine-manager
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: capm-manager-role
+subjects:
+  - kind: ServiceAccount
+    name: default
+    namespace: arges-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  labels:
+    arges: v1alpha1
+    control-plane: metal-controller-manager
+  name: metal-manager-environment-editor-rolebinding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: metal-environment-editor-role
+subjects:
+  - kind: ServiceAccount
+    name: default
+    namespace: arges-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  labels:
+    arges: v1alpha1
+    control-plane: metal-controller-manager
+  name: metal-manager-server-editor-rolebinding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: metal-server-editor-role
+subjects:
+  - kind: ServiceAccount
+    name: default
+    namespace: arges-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  labels:
+    arges: v1alpha1
+    control-plane: metal-controller-manager
+  name: metal-manager-serverclass-editor-rolebinding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: metal-serverclass-editor-role
+subjects:
+  - kind: ServiceAccount
+    name: default
+    namespace: arges-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  labels:
+    app: metal-metadata-server
+    arges: v1alpha1
+  name: metal-metadata-server
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: capi-manager-role
+subjects:
+  - kind: ServiceAccount
+    name: default
+    namespace: arges-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  labels:
+    arges: v1alpha1
+    control-plane: metal-controller-manager
+  name: metal-proxy-rolebinding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: metal-proxy-role
+subjects:
+  - kind: ServiceAccount
+    name: default
+    namespace: arges-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  labels:
+    app: metal-metadata-server
+    arges: v1alpha1
+  name: metal-talosconfig-manager
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cabpt-manager-role
+subjects:
+  - kind: ServiceAccount
+    name: default
+    namespace: arges-system
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    arges: v1alpha1
+    control-plane: metal-controller-manager
+  name: metal-controller-manager-metrics-service
+  namespace: arges-system
+spec:
+  ports:
+    - name: https
+      port: 8443
+      targetPort: https
+  selector:
+    arges: v1alpha1
+    control-plane: metal-controller-manager
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    arges: v1alpha1
+    control-plane: metal-controller-manager
+  name: metal-ipxe
+  namespace: arges-system
+spec:
+  ports:
+    - port: 80
+      protocol: TCP
+      targetPort: http
+  selector:
+    arges: v1alpha1
+    control-plane: metal-controller-manager
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: metal-metadata-server
+    arges: v1alpha1
+  name: metal-metadata-server
+  namespace: arges-system
+spec:
+  ports:
+    - port: 80
+      protocol: TCP
+      targetPort: http
+  selector:
+    app: metal-metadata-server
+    arges: v1alpha1
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    arges: v1alpha1
+    control-plane: metal-controller-manager
+  name: metal-tftp
+  namespace: arges-system
+spec:
+  ports:
+    - port: 69
+      protocol: UDP
+      targetPort: tftp
+  selector:
+    arges: v1alpha1
+    control-plane: metal-controller-manager
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    arges: v1alpha1
+    control-plane: metal-controller-manager
+  name: metal-controller-manager
+  namespace: arges-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      arges: v1alpha1
+      control-plane: metal-controller-manager
+  template:
+    metadata:
+      labels:
+        arges: v1alpha1
+        control-plane: metal-controller-manager
+    spec:
+      containers:
+        - args:
+            - --secure-listen-address=0.0.0.0:8443
+            - --upstream=http://127.0.0.1:8080/
+            - --logtostderr=true
+            - --v=10
+          image: gcr.io/kubebuilder/kube-rbac-proxy:v0.4.1
+          name: kube-rbac-proxy
+          ports:
+            - containerPort: 8443
+              name: https
+        - args:
+            - --metrics-addr=127.0.0.1:8080
+            - --enable-leader-election
+            - --discovery-kubeconfig=http://192.168.1.10:8080/assets/kubeconfig
+          command:
+            - /manager
+          env:
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+          image: docker.io/autonomy/metal-controller-manager:b49a671
+          imagePullPolicy: Always
+          name: manager
+          ports:
+            - containerPort: 69
+              name: tftp
+              protocol: UDP
+            - containerPort: 8081
+              name: http
+              protocol: TCP
+          resources:
+            limits:
+              cpu: 250m
+              memory: 100Mi
+            requests:
+              cpu: 100m
+              memory: 20Mi
+      hostNetwork: true
+      terminationGracePeriodSeconds: 10
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: metal-metadata-server
+    arges: v1alpha1
+  name: metal-metadata-server
+  namespace: arges-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: metal-metadata-server
+      arges: v1alpha1
+  template:
+    metadata:
+      labels:
+        app: metal-metadata-server
+        arges: v1alpha1
+    spec:
+      containers:
+        - args:
+            - --port=9091
+          image: docker.io/autonomy/metal-metadata-server:a07d1ff
+          imagePullPolicy: Always
+          name: server
+          ports:
+            - containerPort: 9091
+              name: http
+              protocol: TCP
+          resources:
+            limits:
+              cpu: 100m
+              memory: 30Mi
+            requests:
+              cpu: 100m
+              memory: 20Mi
+      hostNetwork: true
+      terminationGracePeriodSeconds: 10
