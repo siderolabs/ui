@@ -1,0 +1,7 @@
+providers:
+  - name: 'metal'
+    url: 'https://github.com/talos-systems/cluster-api-provider-metal/releases/latest/infrastructure-components.yaml'
+    type: 'InfrastructureProvider'
+  - name: 'talos'
+    url: 'https://github.com/talos-systems/cluster-api-bootstrap-provider-talos/releases/latest/bootstrap-components.yaml'
+    type: 'BootstrapProvider'
