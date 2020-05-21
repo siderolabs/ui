@@ -70,6 +70,11 @@ func (c *Clusters) watch() (chan []*v1alpha2.Cluster, error) {
 
 			cluster := obj.(*v1alpha2.Cluster)
 
+			// TODO(andrewrynhard): Remove this once we figure out why these
+			// fields are causing the JSON decoder on the frontend to fail.
+			cluster.ManagedFields = nil
+			cluster.Annotations = nil
+
 			c.clusters = append(c.clusters, cluster)
 
 			clusterCh <- c.clusters
@@ -82,6 +87,11 @@ func (c *Clusters) watch() (chan []*v1alpha2.Cluster, error) {
 
 			for i, old := range c.clusters {
 				if old.UID == cluster.UID {
+					// TODO(andrewrynhard): Remove this once we figure out why these
+					// fields are causing the JSON decoder on the frontend to fail.
+					cluster.ManagedFields = nil
+					cluster.Annotations = nil
+
 					c.clusters[i] = cluster
 
 					break

@@ -39,6 +39,9 @@ setup:
 	talosctl cluster create --name=arges --workers=0 -p 69:69/udp,8081:8081/tcp,9091:9091/tcp --endpoint=$(ENDPOINT)
 	$(MAKE) arges
 
+mock:
+	kubectl apply -f ./hack/mock
+
 clean:
 	rm -rf ./bin ./build
 	talosctl cluster destroy --name=arges

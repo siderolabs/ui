@@ -6,7 +6,7 @@ metadata:
   namespace: arges-system
 spec:
   initrd:
-    url: https://github.com/talos-systems/talos/releases/download/v0.4.1/initramfs.xz
+    url: https://github.com/talos-systems/talos/releases/download/v0.5.0-beta.1/initramfs.xz
   kernel:
     args:
       - initrd=initramfs.xz
@@ -23,5 +23,5 @@ spec:
       - printk.devkmsg=on
       - panic=0
       - talos.platform=metal
-      - talos.config=http://10.1.1.12/configdata?uuid=
-    url: https://github.com/talos-systems/talos/releases/download/v0.4.1/vmlinuz
+      - talos.config=http://127.0.0.1/configdata?uuid=
+    url: https://github.com/talos-systems/talos/releases/download/v0.5.0-beta.1/vmlinuz

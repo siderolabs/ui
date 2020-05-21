@@ -1,0 +1,15 @@
+apiVersion: metal.arges.dev/v1alpha1
+kind: Server
+metadata:
+  name: 00000000-0000-0000-0000-012345678912
+spec:
+  cpu:
+    manufacturer: Intel(R) Corporation
+    version: Intel(R) Atom(TM) CPU C3558 @ 2.20GHz
+  system:
+    family: Unknown
+    manufacturer: Unknown
+    productName: Unknown
+    serialNumber: Unknown
+    skuNumber: Unknown
+    version: Unknown
