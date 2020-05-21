@@ -7,7 +7,6 @@ package backend
 import (
 	"context"
 	"sync"
-	"time"
 
 	"github.com/wailsapp/wails"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -36,11 +35,6 @@ func (c *Machines) WailsInit(runtime *wails.Runtime) error {
 	}
 
 	go func() {
-		// TODO(andrewrynhard): There seems to be a race condition between the
-		// frontend and the backend that causes the first events to be dropped by
-		// the frontend. Remove this sleep once we have a fix.
-		time.Sleep(1 * time.Second)
-
 		for machines := range ch {
 			c.log.Debugf("%+v", machines)
 			runtime.Events.Emit("machines", machines)
@@ -48,6 +42,13 @@ func (c *Machines) WailsInit(runtime *wails.Runtime) error {
 	}()
 
 	return nil
+}
+
+func (c *Machines) Machines() []*v1alpha2.Machine {
+	c.Lock()
+	defer c.Unlock()
+
+	return c.machines
 }
 
 func (c *Machines) watch() (chan []*v1alpha2.Machine, error) {

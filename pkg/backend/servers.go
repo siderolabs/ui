@@ -8,26 +8,26 @@ import (
 	"context"
 	"sync"
 
+	"github.com/talos-systems/metal-controller-manager/api/v1alpha1"
 	"github.com/wailsapp/wails"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/scale/scheme"
 	toolscache "k8s.io/client-go/tools/cache"
-	"sigs.k8s.io/cluster-api/api/v1alpha2"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 )
 
-type Clusters struct {
+type Servers struct {
 	config *rest.Config
 	log    *wails.CustomLogger
 
-	clusters []*v1alpha2.Cluster
+	servers []*v1alpha1.Server
 
 	sync.Mutex
 }
 
-func (c *Clusters) WailsInit(runtime *wails.Runtime) error {
-	c.log = runtime.Log.New("Clusters")
+func (c *Servers) WailsInit(runtime *wails.Runtime) error {
+	c.log = runtime.Log.New("Servers")
 
 	ch, err := c.watch()
 	if err != nil {
@@ -35,35 +35,35 @@ func (c *Clusters) WailsInit(runtime *wails.Runtime) error {
 	}
 
 	go func() {
-		for clusters := range ch {
-			c.log.Debugf("%+v", clusters)
-			runtime.Events.Emit("clusters", clusters)
+		for servers := range ch {
+			c.log.Debugf("%+v", servers)
+			runtime.Events.Emit("servers", servers)
 		}
 	}()
 
 	return nil
 }
 
-func (c *Clusters) Clusters() []*v1alpha2.Cluster {
+func (c *Servers) Servers() []*v1alpha1.Server {
 	c.Lock()
 	defer c.Unlock()
 
-	return c.clusters
+	return c.servers
 }
 
-func (c *Clusters) watch() (chan []*v1alpha2.Cluster, error) {
-	clusterCh := make(chan []*v1alpha2.Cluster, 100)
+func (c *Servers) watch() (chan []*v1alpha1.Server, error) {
+	serverCh := make(chan []*v1alpha1.Server, 100)
 
 	s := runtime.NewScheme()
 	_ = scheme.AddToScheme(s)
-	_ = v1alpha2.AddToScheme(s)
+	_ = v1alpha1.AddToScheme(s)
 
 	cache, err := cache.New(c.config, cache.Options{Scheme: s})
 	if err != nil {
 		return nil, err
 	}
 
-	informer, err := cache.GetInformer(context.TODO(), &v1alpha2.Cluster{})
+	informer, err := cache.GetInformer(context.TODO(), &v1alpha1.Server{})
 	if err != nil {
 		return nil, err
 	}
@@ -73,55 +73,55 @@ func (c *Clusters) watch() (chan []*v1alpha2.Cluster, error) {
 			c.Lock()
 			defer c.Unlock()
 
-			cluster := obj.(*v1alpha2.Cluster)
+			server := obj.(*v1alpha1.Server)
 
 			// TODO(andrewrynhard): Remove this once we figure out why these
 			// fields are causing the JSON decoder on the frontend to fail.
-			cluster.ManagedFields = nil
-			cluster.Annotations = nil
+			server.ManagedFields = nil
+			server.Annotations = nil
 
-			c.clusters = append(c.clusters, cluster)
+			c.servers = append(c.servers, server)
 
-			clusterCh <- c.clusters
+			serverCh <- c.servers
 		},
 		UpdateFunc: func(oldObj, newObj interface{}) {
 			c.Lock()
 			defer c.Unlock()
 
-			cluster := newObj.(*v1alpha2.Cluster)
+			server := newObj.(*v1alpha1.Server)
 
-			for i, old := range c.clusters {
-				if old.UID == cluster.UID {
+			for i, old := range c.servers {
+				if old.UID == server.UID {
 					// TODO(andrewrynhard): Remove this once we figure out why these
 					// fields are causing the JSON decoder on the frontend to fail.
-					cluster.ManagedFields = nil
-					cluster.Annotations = nil
+					server.ManagedFields = nil
+					server.Annotations = nil
 
-					c.clusters[i] = cluster
+					c.servers[i] = server
 
 					break
 				}
 			}
 
-			clusterCh <- c.clusters
+			serverCh <- c.servers
 		},
 		DeleteFunc: func(obj interface{}) {
 			c.Lock()
 			defer c.Unlock()
 
-			cluster := obj.(*v1alpha2.Cluster)
+			server := obj.(*v1alpha1.Server)
 
-			for i, old := range c.clusters {
-				if old.UID == cluster.UID {
-					c.clusters[i] = c.clusters[len(c.clusters)-1]
-					c.clusters[len(c.clusters)-1] = nil
-					c.clusters = c.clusters[:len(c.clusters)-1]
+			for i, old := range c.servers {
+				if old.UID == server.UID {
+					c.servers[i] = c.servers[len(c.servers)-1]
+					c.servers[len(c.servers)-1] = nil
+					c.servers = c.servers[:len(c.servers)-1]
 
 					break
 				}
 			}
 
-			clusterCh <- c.clusters
+			serverCh <- c.servers
 		},
 	})
 
@@ -131,8 +131,8 @@ func (c *Clusters) watch() (chan []*v1alpha2.Cluster, error) {
 	go cache.Start(stopCh)
 
 	if ok := cache.WaitForCacheSync(stopCh); ok {
-		c.log.Debug("Cluster cache synced.")
+		c.log.Debug("Server cache synced.")
 	}
 
-	return clusterCh, nil
+	return serverCh, nil
 }
