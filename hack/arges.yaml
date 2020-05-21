@@ -249,6 +249,20 @@ spec:
                 - pass
                 - user
               type: object
+            configPatches:
+              items:
+                properties:
+                  op:
+                    type: string
+                  path:
+                    type: string
+                  value:
+                    x-kubernetes-preserve-unknown-fields: true
+                required:
+                  - op
+                  - path
+                type: object
+              type: array
             cpu:
               properties:
                 manufacturer:
@@ -680,7 +694,7 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.namespace
-          image: docker.io/autonomy/metal-controller-manager:b49a671
+          image: docker.io/autonomy/metal-controller-manager:0347d01
           imagePullPolicy: Always
           name: manager
           ports:
@@ -723,7 +737,7 @@ spec:
       containers:
         - args:
             - --port=9091
-          image: docker.io/autonomy/metal-metadata-server:a07d1ff
+          image: docker.io/autonomy/metal-metadata-server:959cc7b
           imagePullPolicy: Always
           name: server
           ports:
