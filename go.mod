@@ -1,4 +1,4 @@
-module ui
+module github.com/talos-systems/ui
 
 go 1.14
 

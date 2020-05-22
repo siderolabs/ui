@@ -31,7 +31,7 @@
 import Vue from "vue";
 
 export default Vue.extend({
-  name: "Inventory",
+  name: "Servers",
 
   data() {
     return {

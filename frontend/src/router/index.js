@@ -9,7 +9,6 @@ import Inventory from "@/views/Inventory.vue";
 import InventorySidebar from "@/components/InventorySidebar.vue";
 import Servers from "@/views/Servers.vue";
 import ServerClasses from "@/views/ServerClasses.vue";
-import Toolbar from "@/components/Toolbar.vue";
 import Machines from "@/views/Machines.vue";
 import Pools from "@/views/Pools.vue";
 import NewCluster from "@/views/NewCluster.vue";
@@ -26,7 +25,6 @@ const routes = [
   {
     path: "/inventory",
     name: "inventory",
-    component: Inventory,
     components: {
       default: Inventory,
       sidebar: InventorySidebar,
@@ -48,7 +46,6 @@ const routes = [
     path: "/clusters",
     components: {
       default: Clusters,
-      toolbar: Toolbar,
     },
   },
   {
@@ -61,12 +58,12 @@ const routes = [
     },
     children: [
       {
-        path: "/machines",
+        path: "machines",
         name: "machines",
         component: Machines,
       },
       {
-        path: "/pools",
+        path: "pools",
         name: "pools",
         component: Pools,
       },

@@ -41,6 +41,14 @@ export default Vue.extend({
     return {
       items: []
     };
+  },
+
+  mounted: function() {
+    window.backend.Machines.Machines(this.$route.params.cluster).then(
+      machines => {
+        this.items = machines;
+      }
+    );
   }
 });
 </script>
