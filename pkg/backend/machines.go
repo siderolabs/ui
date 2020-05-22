@@ -7,6 +7,7 @@ package backend
 import (
 	"context"
 	"sync"
+	"time"
 
 	"github.com/wailsapp/wails"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -29,12 +30,21 @@ type Machines struct {
 func (c *Machines) WailsInit(runtime *wails.Runtime) error {
 	c.log = runtime.Log.New("Machines")
 
-	ch, err := c.watch()
-	if err != nil {
-		return err
-	}
+	ch := make(chan []*v1alpha2.Machine, 100)
 
 	go func() {
+		err := c.watch(ch)
+		if err != nil {
+			c.log.Errorf("Machine watch failed: %v", err)
+		}
+	}()
+
+	go func() {
+		// TODO(andrewrynhard): There seems to be a race condition between the
+		// frontend and the backend that causes the first events to be dropped by
+		// the frontend. Remove this sleep once we have a fix.
+		time.Sleep(1 * time.Second)
+
 		for machines := range ch {
 			c.log.Debugf("%+v", machines)
 			runtime.Events.Emit("machines", machines)
@@ -51,21 +61,19 @@ func (c *Machines) Machines() []*v1alpha2.Machine {
 	return c.machines
 }
 
-func (c *Machines) watch() (chan []*v1alpha2.Machine, error) {
-	machineCh := make(chan []*v1alpha2.Machine)
-
+func (c *Machines) watch(ch chan []*v1alpha2.Machine) error {
 	s := runtime.NewScheme()
 	_ = scheme.AddToScheme(s)
 	_ = v1alpha2.AddToScheme(s)
 
 	cache, err := cache.New(c.config, cache.Options{Scheme: s})
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	informer, err := cache.GetInformer(context.TODO(), &v1alpha2.Machine{})
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	informer.AddEventHandler(toolscache.ResourceEventHandlerFuncs{
@@ -77,7 +85,7 @@ func (c *Machines) watch() (chan []*v1alpha2.Machine, error) {
 
 			c.machines = append(c.machines, machine)
 
-			machineCh <- c.machines
+			ch <- c.machines
 		},
 		UpdateFunc: func(oldObj, newObj interface{}) {
 			c.Lock()
@@ -93,7 +101,7 @@ func (c *Machines) watch() (chan []*v1alpha2.Machine, error) {
 				}
 			}
 
-			machineCh <- c.machines
+			ch <- c.machines
 		},
 		DeleteFunc: func(obj interface{}) {
 			c.Lock()
@@ -111,7 +119,7 @@ func (c *Machines) watch() (chan []*v1alpha2.Machine, error) {
 				}
 			}
 
-			machineCh <- c.machines
+			ch <- c.machines
 		},
 	})
 
@@ -124,5 +132,7 @@ func (c *Machines) watch() (chan []*v1alpha2.Machine, error) {
 		c.log.Debug("Machine cache synced.")
 	}
 
-	return machineCh, nil
+	<-stopCh
+
+	return nil
 }

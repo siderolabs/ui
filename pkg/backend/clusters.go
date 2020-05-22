@@ -7,6 +7,7 @@ package backend
 import (
 	"context"
 	"sync"
+	"time"
 
 	"github.com/wailsapp/wails"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -29,12 +30,21 @@ type Clusters struct {
 func (c *Clusters) WailsInit(runtime *wails.Runtime) error {
 	c.log = runtime.Log.New("Clusters")
 
-	ch, err := c.watch()
-	if err != nil {
-		return err
-	}
+	ch := make(chan []*v1alpha2.Cluster, 100)
 
 	go func() {
+		err := c.watch(ch)
+		if err != nil {
+			c.log.Errorf("Cluster watch failed: %v", err)
+		}
+	}()
+
+	go func() {
+		// TODO(andrewrynhard): There seems to be a race condition between the
+		// frontend and the backend that causes the first events to be dropped by
+		// the frontend. Remove this sleep once we have a fix.
+		time.Sleep(1 * time.Second)
+
 		for clusters := range ch {
 			c.log.Debugf("%+v", clusters)
 			runtime.Events.Emit("clusters", clusters)
@@ -51,21 +61,19 @@ func (c *Clusters) Clusters() []*v1alpha2.Cluster {
 	return c.clusters
 }
 
-func (c *Clusters) watch() (chan []*v1alpha2.Cluster, error) {
-	clusterCh := make(chan []*v1alpha2.Cluster, 100)
-
+func (c *Clusters) watch(ch chan []*v1alpha2.Cluster) error {
 	s := runtime.NewScheme()
 	_ = scheme.AddToScheme(s)
 	_ = v1alpha2.AddToScheme(s)
 
 	cache, err := cache.New(c.config, cache.Options{Scheme: s})
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	informer, err := cache.GetInformer(context.TODO(), &v1alpha2.Cluster{})
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	informer.AddEventHandler(toolscache.ResourceEventHandlerFuncs{
@@ -82,7 +90,7 @@ func (c *Clusters) watch() (chan []*v1alpha2.Cluster, error) {
 
 			c.clusters = append(c.clusters, cluster)
 
-			clusterCh <- c.clusters
+			ch <- c.clusters
 		},
 		UpdateFunc: func(oldObj, newObj interface{}) {
 			c.Lock()
@@ -103,7 +111,7 @@ func (c *Clusters) watch() (chan []*v1alpha2.Cluster, error) {
 				}
 			}
 
-			clusterCh <- c.clusters
+			ch <- c.clusters
 		},
 		DeleteFunc: func(obj interface{}) {
 			c.Lock()
@@ -121,7 +129,7 @@ func (c *Clusters) watch() (chan []*v1alpha2.Cluster, error) {
 				}
 			}
 
-			clusterCh <- c.clusters
+			ch <- c.clusters
 		},
 	})
 
@@ -134,5 +142,7 @@ func (c *Clusters) watch() (chan []*v1alpha2.Cluster, error) {
 		c.log.Debug("Cluster cache synced.")
 	}
 
-	return clusterCh, nil
+	<-stopCh
+
+	return nil
 }

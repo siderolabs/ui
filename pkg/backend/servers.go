@@ -7,6 +7,7 @@ package backend
 import (
 	"context"
 	"sync"
+	"time"
 
 	"github.com/talos-systems/metal-controller-manager/api/v1alpha1"
 	"github.com/wailsapp/wails"
@@ -29,12 +30,21 @@ type Servers struct {
 func (c *Servers) WailsInit(runtime *wails.Runtime) error {
 	c.log = runtime.Log.New("Servers")
 
-	ch, err := c.watch()
-	if err != nil {
-		return err
-	}
+	ch := make(chan []*v1alpha1.Server, 100)
 
 	go func() {
+		err := c.watch(ch)
+		if err != nil {
+			c.log.Errorf("Server watch failed: %v", err)
+		}
+	}()
+
+	go func() {
+		// TODO(andrewrynhard): There seems to be a race condition between the
+		// frontend and the backend that causes the first events to be dropped by
+		// the frontend. Remove this sleep once we have a fix.
+		time.Sleep(1 * time.Second)
+
 		for servers := range ch {
 			c.log.Debugf("%+v", servers)
 			runtime.Events.Emit("servers", servers)
@@ -51,21 +61,19 @@ func (c *Servers) Servers() []*v1alpha1.Server {
 	return c.servers
 }
 
-func (c *Servers) watch() (chan []*v1alpha1.Server, error) {
-	serverCh := make(chan []*v1alpha1.Server, 100)
-
+func (c *Servers) watch(ch chan []*v1alpha1.Server) error {
 	s := runtime.NewScheme()
 	_ = scheme.AddToScheme(s)
 	_ = v1alpha1.AddToScheme(s)
 
 	cache, err := cache.New(c.config, cache.Options{Scheme: s})
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	informer, err := cache.GetInformer(context.TODO(), &v1alpha1.Server{})
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	informer.AddEventHandler(toolscache.ResourceEventHandlerFuncs{
@@ -82,7 +90,7 @@ func (c *Servers) watch() (chan []*v1alpha1.Server, error) {
 
 			c.servers = append(c.servers, server)
 
-			serverCh <- c.servers
+			ch <- c.servers
 		},
 		UpdateFunc: func(oldObj, newObj interface{}) {
 			c.Lock()
@@ -103,7 +111,7 @@ func (c *Servers) watch() (chan []*v1alpha1.Server, error) {
 				}
 			}
 
-			serverCh <- c.servers
+			ch <- c.servers
 		},
 		DeleteFunc: func(obj interface{}) {
 			c.Lock()
@@ -121,7 +129,7 @@ func (c *Servers) watch() (chan []*v1alpha1.Server, error) {
 				}
 			}
 
-			serverCh <- c.servers
+			ch <- c.servers
 		},
 	})
 
@@ -134,5 +142,7 @@ func (c *Servers) watch() (chan []*v1alpha1.Server, error) {
 		c.log.Debug("Server cache synced.")
 	}
 
-	return serverCh, nil
+	<-stopCh
+
+	return nil
 }

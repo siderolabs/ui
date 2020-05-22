@@ -7,6 +7,7 @@ package backend
 import (
 	"context"
 	"sync"
+	"time"
 
 	"github.com/talos-systems/metal-controller-manager/api/v1alpha1"
 	"github.com/wailsapp/wails"
@@ -29,12 +30,21 @@ type ServerClasses struct {
 func (c *ServerClasses) WailsInit(runtime *wails.Runtime) error {
 	c.log = runtime.Log.New("ServerClasses")
 
-	ch, err := c.watch()
-	if err != nil {
-		return err
-	}
+	ch := make(chan []*v1alpha1.ServerClass, 100)
 
 	go func() {
+		err := c.watch(ch)
+		if err != nil {
+			c.log.Errorf("Server watch failed: %v", err)
+		}
+	}()
+
+	go func() {
+		// TODO(andrewrynhard): There seems to be a race condition between the
+		// frontend and the backend that causes the first events to be dropped by
+		// the frontend. Remove this sleep once we have a fix.
+		time.Sleep(1 * time.Second)
+
 		for serverClasses := range ch {
 			c.log.Debugf("%+v", serverClasses)
 			runtime.Events.Emit("serverClasses", serverClasses)
@@ -51,21 +61,19 @@ func (c *ServerClasses) ServerClasses() []*v1alpha1.ServerClass {
 	return c.serverClasses
 }
 
-func (c *ServerClasses) watch() (chan []*v1alpha1.ServerClass, error) {
-	serverCh := make(chan []*v1alpha1.ServerClass, 100)
-
+func (c *ServerClasses) watch(ch chan []*v1alpha1.ServerClass) error {
 	s := runtime.NewScheme()
 	_ = scheme.AddToScheme(s)
 	_ = v1alpha1.AddToScheme(s)
 
 	cache, err := cache.New(c.config, cache.Options{Scheme: s})
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	informer, err := cache.GetInformer(context.TODO(), &v1alpha1.ServerClass{})
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	informer.AddEventHandler(toolscache.ResourceEventHandlerFuncs{
@@ -82,7 +90,7 @@ func (c *ServerClasses) watch() (chan []*v1alpha1.ServerClass, error) {
 
 			c.serverClasses = append(c.serverClasses, server)
 
-			serverCh <- c.serverClasses
+			ch <- c.serverClasses
 		},
 		UpdateFunc: func(oldObj, newObj interface{}) {
 			c.Lock()
@@ -103,7 +111,7 @@ func (c *ServerClasses) watch() (chan []*v1alpha1.ServerClass, error) {
 				}
 			}
 
-			serverCh <- c.serverClasses
+			ch <- c.serverClasses
 		},
 		DeleteFunc: func(obj interface{}) {
 			c.Lock()
@@ -121,7 +129,7 @@ func (c *ServerClasses) watch() (chan []*v1alpha1.ServerClass, error) {
 				}
 			}
 
-			serverCh <- c.serverClasses
+			ch <- c.serverClasses
 		},
 	})
 
@@ -134,5 +142,7 @@ func (c *ServerClasses) watch() (chan []*v1alpha1.ServerClass, error) {
 		c.log.Debug("Server cache synced.")
 	}
 
-	return serverCh, nil
+	<-stopCh
+
+	return nil
 }
