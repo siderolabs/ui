@@ -29,7 +29,7 @@
 import Vue from "vue";
 
 export default Vue.extend({
-  name: "Inventory",
+  name: "ServerClasses",
 
   data() {
     return {

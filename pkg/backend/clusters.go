@@ -14,7 +14,7 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/scale/scheme"
 	toolscache "k8s.io/client-go/tools/cache"
-	"sigs.k8s.io/cluster-api/api/v1alpha2"
+	"sigs.k8s.io/cluster-api/api/v1alpha3"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 )
 
@@ -22,7 +22,7 @@ type Clusters struct {
 	config *rest.Config
 	log    *wails.CustomLogger
 
-	clusters []*v1alpha2.Cluster
+	clusters []*v1alpha3.Cluster
 
 	sync.Mutex
 }
@@ -30,7 +30,7 @@ type Clusters struct {
 func (c *Clusters) WailsInit(runtime *wails.Runtime) error {
 	c.log = runtime.Log.New("Clusters")
 
-	ch := make(chan []*v1alpha2.Cluster, 100)
+	ch := make(chan []*v1alpha3.Cluster, 100)
 
 	go func() {
 		err := c.watch(ch)
@@ -54,24 +54,24 @@ func (c *Clusters) WailsInit(runtime *wails.Runtime) error {
 	return nil
 }
 
-func (c *Clusters) Clusters() []*v1alpha2.Cluster {
+func (c *Clusters) Clusters() []*v1alpha3.Cluster {
 	c.Lock()
 	defer c.Unlock()
 
 	return c.clusters
 }
 
-func (c *Clusters) watch(ch chan []*v1alpha2.Cluster) error {
+func (c *Clusters) watch(ch chan []*v1alpha3.Cluster) error {
 	s := runtime.NewScheme()
 	_ = scheme.AddToScheme(s)
-	_ = v1alpha2.AddToScheme(s)
+	_ = v1alpha3.AddToScheme(s)
 
 	cache, err := cache.New(c.config, cache.Options{Scheme: s})
 	if err != nil {
 		return err
 	}
 
-	informer, err := cache.GetInformer(context.TODO(), &v1alpha2.Cluster{})
+	informer, err := cache.GetInformer(context.TODO(), &v1alpha3.Cluster{})
 	if err != nil {
 		return err
 	}
@@ -81,7 +81,7 @@ func (c *Clusters) watch(ch chan []*v1alpha2.Cluster) error {
 			c.Lock()
 			defer c.Unlock()
 
-			cluster := obj.(*v1alpha2.Cluster)
+			cluster := obj.(*v1alpha3.Cluster)
 
 			// TODO(andrewrynhard): Remove this once we figure out why these
 			// fields are causing the JSON decoder on the frontend to fail.
@@ -96,7 +96,7 @@ func (c *Clusters) watch(ch chan []*v1alpha2.Cluster) error {
 			c.Lock()
 			defer c.Unlock()
 
-			cluster := newObj.(*v1alpha2.Cluster)
+			cluster := newObj.(*v1alpha3.Cluster)
 
 			for i, old := range c.clusters {
 				if old.UID == cluster.UID {
@@ -117,7 +117,7 @@ func (c *Clusters) watch(ch chan []*v1alpha2.Cluster) error {
 			c.Lock()
 			defer c.Unlock()
 
-			cluster := obj.(*v1alpha2.Cluster)
+			cluster := obj.(*v1alpha3.Cluster)
 
 			for i, old := range c.clusters {
 				if old.UID == cluster.UID {

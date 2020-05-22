@@ -14,7 +14,7 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/scale/scheme"
 	toolscache "k8s.io/client-go/tools/cache"
-	"sigs.k8s.io/cluster-api/api/v1alpha2"
+	"sigs.k8s.io/cluster-api/api/v1alpha3"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 )
 
@@ -22,7 +22,7 @@ type Machines struct {
 	config *rest.Config
 	log    *wails.CustomLogger
 
-	machines []*v1alpha2.Machine
+	machines []*v1alpha3.Machine
 
 	sync.Mutex
 }
@@ -30,7 +30,7 @@ type Machines struct {
 func (c *Machines) WailsInit(runtime *wails.Runtime) error {
 	c.log = runtime.Log.New("Machines")
 
-	ch := make(chan []*v1alpha2.Machine, 100)
+	ch := make(chan []*v1alpha3.Machine, 100)
 
 	go func() {
 		err := c.watch(ch)
@@ -54,24 +54,32 @@ func (c *Machines) WailsInit(runtime *wails.Runtime) error {
 	return nil
 }
 
-func (c *Machines) Machines() []*v1alpha2.Machine {
+func (c *Machines) Machines(cluster string) []*v1alpha3.Machine {
 	c.Lock()
 	defer c.Unlock()
 
-	return c.machines
+	machines := []*v1alpha3.Machine{}
+
+	for _, machine := range c.machines {
+		if machine.Spec.ClusterName == cluster {
+			machines = append(machines, machine)
+		}
+	}
+
+	return machines
 }
 
-func (c *Machines) watch(ch chan []*v1alpha2.Machine) error {
+func (c *Machines) watch(ch chan []*v1alpha3.Machine) error {
 	s := runtime.NewScheme()
 	_ = scheme.AddToScheme(s)
-	_ = v1alpha2.AddToScheme(s)
+	_ = v1alpha3.AddToScheme(s)
 
 	cache, err := cache.New(c.config, cache.Options{Scheme: s})
 	if err != nil {
 		return err
 	}
 
-	informer, err := cache.GetInformer(context.TODO(), &v1alpha2.Machine{})
+	informer, err := cache.GetInformer(context.TODO(), &v1alpha3.Machine{})
 	if err != nil {
 		return err
 	}
@@ -81,7 +89,7 @@ func (c *Machines) watch(ch chan []*v1alpha2.Machine) error {
 			c.Lock()
 			defer c.Unlock()
 
-			machine := obj.(*v1alpha2.Machine)
+			machine := obj.(*v1alpha3.Machine)
 
 			c.machines = append(c.machines, machine)
 
@@ -91,7 +99,7 @@ func (c *Machines) watch(ch chan []*v1alpha2.Machine) error {
 			c.Lock()
 			defer c.Unlock()
 
-			machine := newObj.(*v1alpha2.Machine)
+			machine := newObj.(*v1alpha3.Machine)
 
 			for i, old := range c.machines {
 				if old.UID == machine.UID {
@@ -107,7 +115,7 @@ func (c *Machines) watch(ch chan []*v1alpha2.Machine) error {
 			c.Lock()
 			defer c.Unlock()
 
-			machine := obj.(*v1alpha2.Machine)
+			machine := obj.(*v1alpha3.Machine)
 
 			for i, old := range c.machines {
 				if old.UID == machine.UID {
