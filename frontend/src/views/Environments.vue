@@ -18,8 +18,6 @@
           {{ item.spec.kernel.url }}
         </td>
         <td class="border px-4 py-2 text-sm">{{ item.spec.initrd.url }}</td>
-        <td class="border px-4 py-2 text-sm"></td>
-        <td class="border px-4 py-2 text-sm"></td>
       </tr>
     </tbody>
   </table>
