@@ -9,6 +9,7 @@ import Inventory from "@/views/Inventory.vue";
 import InventorySidebar from "@/components/InventorySidebar.vue";
 import Servers from "@/views/Servers.vue";
 import ServerClasses from "@/views/ServerClasses.vue";
+import Environments from "@/views/Environments.vue";
 import Machines from "@/views/Machines.vue";
 import Pools from "@/views/Pools.vue";
 import NewCluster from "@/views/NewCluster.vue";
@@ -41,6 +42,12 @@ const routes = [
         component: ServerClasses,
       },
     ],
+  },
+  {
+    path: "/environments",
+    components: {
+      default: Environments,
+    },
   },
   {
     path: "/clusters",

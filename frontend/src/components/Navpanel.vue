@@ -9,6 +9,9 @@
             <router-link to="/inventory">inventory</router-link>
           </li>
           <li class="section">
+            <router-link to="/environments">environments</router-link>
+          </li>
+          <li class="section">
             <router-link to="/clusters">clusters</router-link>
           </li>
         </ul>
