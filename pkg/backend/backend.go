@@ -21,6 +21,7 @@ type Kubernetes struct {
 	Machines      *Machines
 	Servers       *Servers
 	ServerClasses *ServerClasses
+	Environments  *Environments
 }
 
 type Talos struct{}
@@ -43,6 +44,7 @@ func NewBackend() (*Backend, error) {
 	machines := &Machines{config: config}
 	servers := &Servers{config: config}
 	serverClasses := &ServerClasses{config: config}
+	environments := &Environments{config: config}
 
 	return &Backend{
 		Kubernetes: &Kubernetes{
@@ -50,6 +52,7 @@ func NewBackend() (*Backend, error) {
 			Machines:      machines,
 			Servers:       servers,
 			ServerClasses: serverClasses,
+			Environments:  environments,
 		},
 	}, nil
 }
