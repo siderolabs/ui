@@ -36,6 +36,7 @@ func main() {
 	app.Bind(b.Kubernetes.ServerClasses)
 	app.Bind(b.Kubernetes.Environments)
 	app.Bind(b.Kubernetes.Machines)
+	app.Bind(b.Kubernetes.Pools)
 
 	app.Run()
 }

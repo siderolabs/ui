@@ -35,6 +35,20 @@ export default Vue.extend({
     return {
       items: []
     };
+  },
+
+  created: function() {
+    window.wails.Events.On("pools", pools => {
+      if (pools) {
+        this.items = pools;
+      }
+    });
+  },
+
+  mounted: function() {
+    window.backend.Pools.Pools().then(pools => {
+      this.items = pools;
+    });
   }
 });
 </script>
