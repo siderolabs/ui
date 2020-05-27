@@ -59,7 +59,7 @@ export default Vue.extend({
 
   methods: {
     click(item) {
-      router.push(`/clusters/${item.metadata.name}`);
+      router.push(`/clusters/${item.metadata.name}/machines`);
     }
   }
 });
