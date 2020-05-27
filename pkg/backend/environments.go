@@ -83,11 +83,6 @@ func (c *Environments) watch(ch chan []*v1alpha1.Environment) error {
 
 			environment := obj.(*v1alpha1.Environment)
 
-			// TODO(andrewrynhard): Remove this once we figure out why these
-			// fields are causing the JSON decoder on the frontend to fail.
-			environment.ManagedFields = nil
-			environment.Annotations = nil
-
 			c.environments = append(c.environments, environment)
 
 			ch <- c.environments
@@ -100,11 +95,6 @@ func (c *Environments) watch(ch chan []*v1alpha1.Environment) error {
 
 			for i, old := range c.environments {
 				if old.UID == environment.UID {
-					// TODO(andrewrynhard): Remove this once we figure out why these
-					// fields are causing the JSON decoder on the frontend to fail.
-					environment.ManagedFields = nil
-					environment.Annotations = nil
-
 					c.environments[i] = environment
 
 					break

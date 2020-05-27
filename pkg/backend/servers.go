@@ -83,11 +83,6 @@ func (c *Servers) watch(ch chan []*v1alpha1.Server) error {
 
 			server := obj.(*v1alpha1.Server)
 
-			// TODO(andrewrynhard): Remove this once we figure out why these
-			// fields are causing the JSON decoder on the frontend to fail.
-			server.ManagedFields = nil
-			server.Annotations = nil
-
 			c.servers = append(c.servers, server)
 
 			ch <- c.servers
@@ -100,11 +95,6 @@ func (c *Servers) watch(ch chan []*v1alpha1.Server) error {
 
 			for i, old := range c.servers {
 				if old.UID == server.UID {
-					// TODO(andrewrynhard): Remove this once we figure out why these
-					// fields are causing the JSON decoder on the frontend to fail.
-					server.ManagedFields = nil
-					server.Annotations = nil
-
 					c.servers[i] = server
 
 					break

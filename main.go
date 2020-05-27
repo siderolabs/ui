@@ -30,10 +30,12 @@ func main() {
 		CSS:    css,
 		Colour: "#131313",
 	})
+
 	app.Bind(b.Kubernetes.Clusters)
 	app.Bind(b.Kubernetes.Servers)
 	app.Bind(b.Kubernetes.ServerClasses)
 	app.Bind(b.Kubernetes.Environments)
 	app.Bind(b.Kubernetes.Machines)
+
 	app.Run()
 }
