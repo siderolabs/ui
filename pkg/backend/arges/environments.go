@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-package backend
+package arges
 
 import (
 	"context"
@@ -18,24 +18,24 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 )
 
-type ServerClasses struct {
+type Environments struct {
 	config *rest.Config
 	log    *wails.CustomLogger
 
-	serverClasses []*v1alpha1.ServerClass
+	environments []*v1alpha1.Environment
 
 	sync.Mutex
 }
 
-func (c *ServerClasses) WailsInit(runtime *wails.Runtime) error {
-	c.log = runtime.Log.New("ServerClasses")
+func (c *Environments) WailsInit(runtime *wails.Runtime) error {
+	c.log = runtime.Log.New("Environments")
 
-	ch := make(chan []*v1alpha1.ServerClass, 100)
+	ch := make(chan []*v1alpha1.Environment, 100)
 
 	go func() {
 		err := c.watch(ch)
 		if err != nil {
-			c.log.Errorf("Server watch failed: %v", err)
+			c.log.Errorf("Environment watch failed: %v", err)
 		}
 	}()
 
@@ -45,23 +45,23 @@ func (c *ServerClasses) WailsInit(runtime *wails.Runtime) error {
 		// the frontend. Remove this sleep once we have a fix.
 		time.Sleep(1 * time.Second)
 
-		for serverClasses := range ch {
-			c.log.Debugf("%+v", serverClasses)
-			runtime.Events.Emit("serverClasses", serverClasses)
+		for environments := range ch {
+			c.log.Debugf("%+v", environments)
+			runtime.Events.Emit("environments", environments)
 		}
 	}()
 
 	return nil
 }
 
-func (c *ServerClasses) ServerClasses() []*v1alpha1.ServerClass {
+func (c *Environments) Environments() []*v1alpha1.Environment {
 	c.Lock()
 	defer c.Unlock()
 
-	return c.serverClasses
+	return c.environments
 }
 
-func (c *ServerClasses) watch(ch chan []*v1alpha1.ServerClass) error {
+func (c *Environments) watch(ch chan []*v1alpha1.Environment) error {
 	s := runtime.NewScheme()
 	_ = scheme.AddToScheme(s)
 	_ = v1alpha1.AddToScheme(s)
@@ -71,7 +71,7 @@ func (c *ServerClasses) watch(ch chan []*v1alpha1.ServerClass) error {
 		return err
 	}
 
-	informer, err := cache.GetInformer(context.TODO(), &v1alpha1.ServerClass{})
+	informer, err := cache.GetInformer(context.TODO(), &v1alpha1.Environment{})
 	if err != nil {
 		return err
 	}
@@ -81,45 +81,45 @@ func (c *ServerClasses) watch(ch chan []*v1alpha1.ServerClass) error {
 			c.Lock()
 			defer c.Unlock()
 
-			server := obj.(*v1alpha1.ServerClass)
+			environment := obj.(*v1alpha1.Environment)
 
-			c.serverClasses = append(c.serverClasses, server)
+			c.environments = append(c.environments, environment)
 
-			ch <- c.serverClasses
+			ch <- c.environments
 		},
 		UpdateFunc: func(oldObj, newObj interface{}) {
 			c.Lock()
 			defer c.Unlock()
 
-			server := newObj.(*v1alpha1.ServerClass)
+			environment := newObj.(*v1alpha1.Environment)
 
-			for i, old := range c.serverClasses {
-				if old.UID == server.UID {
-					c.serverClasses[i] = server
+			for i, old := range c.environments {
+				if old.UID == environment.UID {
+					c.environments[i] = environment
 
 					break
 				}
 			}
 
-			ch <- c.serverClasses
+			ch <- c.environments
 		},
 		DeleteFunc: func(obj interface{}) {
 			c.Lock()
 			defer c.Unlock()
 
-			server := obj.(*v1alpha1.ServerClass)
+			environment := obj.(*v1alpha1.Environment)
 
-			for i, old := range c.serverClasses {
-				if old.UID == server.UID {
-					c.serverClasses[i] = c.serverClasses[len(c.serverClasses)-1]
-					c.serverClasses[len(c.serverClasses)-1] = nil
-					c.serverClasses = c.serverClasses[:len(c.serverClasses)-1]
+			for i, old := range c.environments {
+				if old.UID == environment.UID {
+					c.environments[i] = c.environments[len(c.environments)-1]
+					c.environments[len(c.environments)-1] = nil
+					c.environments = c.environments[:len(c.environments)-1]
 
 					break
 				}
 			}
 
-			ch <- c.serverClasses
+			ch <- c.environments
 		},
 	})
 
@@ -129,7 +129,7 @@ func (c *ServerClasses) watch(ch chan []*v1alpha1.ServerClass) error {
 	go cache.Start(stopCh)
 
 	if ok := cache.WaitForCacheSync(stopCh); ok {
-		c.log.Debug("Server cache synced.")
+		c.log.Debug("Environment cache synced.")
 	}
 
 	<-stopCh

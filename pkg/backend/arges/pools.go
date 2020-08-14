@@ -2,14 +2,14 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-package backend
+package arges
 
 import (
 	"context"
 	"sync"
 	"time"
 
-	"github.com/talos-systems/metal-controller-manager/api/v1alpha1"
+	"github.com/talos-systems/talos-controller-manager/api/v1alpha1"
 	"github.com/wailsapp/wails"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
@@ -18,24 +18,24 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 )
 
-type Servers struct {
+type Pools struct {
 	config *rest.Config
 	log    *wails.CustomLogger
 
-	servers []*v1alpha1.Server
+	pools []*v1alpha1.Pool
 
 	sync.Mutex
 }
 
-func (c *Servers) WailsInit(runtime *wails.Runtime) error {
-	c.log = runtime.Log.New("Servers")
+func (c *Pools) WailsInit(runtime *wails.Runtime) error {
+	c.log = runtime.Log.New("Pools")
 
-	ch := make(chan []*v1alpha1.Server, 100)
+	ch := make(chan []*v1alpha1.Pool, 100)
 
 	go func() {
 		err := c.watch(ch)
 		if err != nil {
-			c.log.Errorf("Server watch failed: %v", err)
+			c.log.Errorf("Pool watch failed: %v", err)
 		}
 	}()
 
@@ -45,23 +45,23 @@ func (c *Servers) WailsInit(runtime *wails.Runtime) error {
 		// the frontend. Remove this sleep once we have a fix.
 		time.Sleep(1 * time.Second)
 
-		for servers := range ch {
-			c.log.Debugf("%+v", servers)
-			runtime.Events.Emit("servers", servers)
+		for pools := range ch {
+			c.log.Debugf("%+v", pools)
+			runtime.Events.Emit("pools", pools)
 		}
 	}()
 
 	return nil
 }
 
-func (c *Servers) Servers() []*v1alpha1.Server {
+func (c *Pools) Pools() []*v1alpha1.Pool {
 	c.Lock()
 	defer c.Unlock()
 
-	return c.servers
+	return c.pools
 }
 
-func (c *Servers) watch(ch chan []*v1alpha1.Server) error {
+func (c *Pools) watch(ch chan []*v1alpha1.Pool) error {
 	s := runtime.NewScheme()
 	_ = scheme.AddToScheme(s)
 	_ = v1alpha1.AddToScheme(s)
@@ -71,7 +71,7 @@ func (c *Servers) watch(ch chan []*v1alpha1.Server) error {
 		return err
 	}
 
-	informer, err := cache.GetInformer(context.TODO(), &v1alpha1.Server{})
+	informer, err := cache.GetInformer(context.TODO(), &v1alpha1.Pool{})
 	if err != nil {
 		return err
 	}
@@ -81,45 +81,45 @@ func (c *Servers) watch(ch chan []*v1alpha1.Server) error {
 			c.Lock()
 			defer c.Unlock()
 
-			server := obj.(*v1alpha1.Server)
+			pool := obj.(*v1alpha1.Pool)
 
-			c.servers = append(c.servers, server)
+			c.pools = append(c.pools, pool)
 
-			ch <- c.servers
+			ch <- c.pools
 		},
 		UpdateFunc: func(oldObj, newObj interface{}) {
 			c.Lock()
 			defer c.Unlock()
 
-			server := newObj.(*v1alpha1.Server)
+			pool := newObj.(*v1alpha1.Pool)
 
-			for i, old := range c.servers {
-				if old.UID == server.UID {
-					c.servers[i] = server
+			for i, old := range c.pools {
+				if old.UID == pool.UID {
+					c.pools[i] = pool
 
 					break
 				}
 			}
 
-			ch <- c.servers
+			ch <- c.pools
 		},
 		DeleteFunc: func(obj interface{}) {
 			c.Lock()
 			defer c.Unlock()
 
-			server := obj.(*v1alpha1.Server)
+			pool := obj.(*v1alpha1.Pool)
 
-			for i, old := range c.servers {
-				if old.UID == server.UID {
-					c.servers[i] = c.servers[len(c.servers)-1]
-					c.servers[len(c.servers)-1] = nil
-					c.servers = c.servers[:len(c.servers)-1]
+			for i, old := range c.pools {
+				if old.UID == pool.UID {
+					c.pools[i] = c.pools[len(c.pools)-1]
+					c.pools[len(c.pools)-1] = nil
+					c.pools = c.pools[:len(c.pools)-1]
 
 					break
 				}
 			}
 
-			ch <- c.servers
+			ch <- c.pools
 		},
 	})
 
@@ -129,7 +129,7 @@ func (c *Servers) watch(ch chan []*v1alpha1.Server) error {
 	go cache.Start(stopCh)
 
 	if ok := cache.WaitForCacheSync(stopCh); ok {
-		c.log.Debug("Server cache synced.")
+		c.log.Debug("Pool cache synced.")
 	}
 
 	<-stopCh

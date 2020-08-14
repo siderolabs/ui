@@ -1,106 +1,100 @@
 <template>
   <div id="app">
-    <div class="grid">
-      <div class="navbar">
-        <Navbar />
-      </div>
-      <div class="navpanel">
-        <Navpanel />
-      </div>
-      <div class="sidebar">
-        <router-view name="sidebar"></router-view>
-      </div>
-      <div class="main">
-        <div class="subgrid">
-          <div class="toolbar">
-            <router-view name="toolbar"></router-view>
-          </div>
-          <div class="content">
-            <div class="w-3/4 m-auto">
-              <router-view></router-view>
-            </div>
-          </div>
-        </div>
-      </div>
+    <div class="main-menu">
+      <sui-menu secondary >
+        <sui-menu-item>
+          <sui-button basic size="mini" icon="bars" v-on:click="toggleSidebar"/>
+        </sui-menu-item>
+        <sui-menu-item>
+          <breadcrumb/>
+        </sui-menu-item>
+      </sui-menu>
+    </div>
+    <div class="content">
+      <sui-sidebar-pushable>
+        <sui-menu
+          is="sui-sidebar"
+          :visible="sidebarVisible"
+          animation="overlay"
+          width="thin"
+          inverted
+          vertical
+          pointing
+          style="overflow: hidden"
+        >
+          <router-link is="sui-menu-item" to="/"> <sui-icon name="home" /> Home </router-link>
+          <router-view name="sidebar"/>
+        </sui-menu>
+        <sui-sidebar-pusher class="router-view">
+          <router-view/>
+        </sui-sidebar-pusher>
+      </sui-sidebar-pushable>
     </div>
   </div>
 </template>
 
 <script>
-import Vue from "vue";
-import Navpanel from "@/components/Navpanel.vue";
-import Navbar from "@/components/Navbar.vue";
-import "./assets/css/main.css";
+  import 'semantic-ui-css/semantic.min.css';
+  import Vue from "vue";
+  import Breadcrumb from "@/components/Breadcrumb.vue"
 
-export default Vue.extend({
-  name: "app",
-  components: {
-    Navbar,
-    Navpanel
-  }
-});
+  export default Vue.extend({
+    name: "app",
+
+    components: {
+      Breadcrumb,
+    },
+
+    data() {
+      return {
+        sidebarVisible: false,
+      }
+    },
+
+    methods: {
+      toggleSidebar() {
+        this.sidebarVisible = !this.sidebarVisible;
+      },
+    },
+  });
 </script>
 
 <style>
-#app {
-  font-family: "Avenir", Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-html {
-  height: 100%;
-  overflow: hidden;
-  background-color: white;
-  background-size: 20px 20px;
-}
-
-.grid {
-  display: grid;
-  grid-template-rows: theme("spacing.12") auto;
-  grid-template-columns: auto 1fr;
-  height: 100vh;
-}
-
-.navbar {
-  @apply z-50;
-  grid-column-start: 1;
-  grid-column-end: 3;
-}
-
-.navpanel {
-  @apply z-40;
-  grid-row-start: 2;
-  grid-row-end: 3;
-}
-
-.sidebar {
-  @apply z-30;
-  width: 200px;
-  grid-row-start: 2;
-  grid-row-end: 3;
-  grid-column-start: 1;
-  grid-column-end: 2;
-}
-
-.main {
-  grid-column-start: 2;
-  grid-row-start: 2;
-}
-
-.subgrid {
-  display: grid;
-  grid-gap: theme("spacing.10");
-  grid-template-rows: theme("spacing.12") auto;
-  grid-template-columns: 1fr;
-  height: 100%;
-}
-
-.toolbar {
-  grid-row-start: 1;
+.main-menu {
+  background: linear-gradient(0deg, rgba(241,241,241,1) 0%, rgba(254,254,254,1) 100%);
+  border-bottom: 1px solid #cdcdcd;
 }
 
 .content {
-  grid-row-start: 2;
+  border-top: 1px solid #ffffff;
+  background: rgba(241,241,241,1);
 }
+
+.router-view {
+  padding: 1em;
+  height: 100%;
+}
+
+#app {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+#app > .main-menu {
+  flex-grow: 0;
+}
+
+#app > .content {
+  flex-grow: 1;
+  position: relative;
+}
+
+#app > .content > div {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+}
+
 </style>
