@@ -8,6 +8,8 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/talos-systems/ui/pkg/backend/common"
+	"github.com/talos-systems/ui/pkg/backend/talos"
 	"k8s.io/client-go/tools/clientcmd"
 )
 
@@ -17,12 +19,8 @@ type Backend struct {
 }
 
 type Kubernetes struct {
-	Clusters      *Clusters
-	Machines      *Machines
-	Servers       *Servers
-	ServerClasses *ServerClasses
-	Environments  *Environments
-	Pools         *Pools
+	Clusters *talos.Clusters
+	V1       *common.CAPI
 }
 
 type Talos struct{}
@@ -36,26 +34,18 @@ func NewBackend() (*Backend, error) {
 		kubeconfig = filepath.Join(os.Getenv("HOME"), ".kube", "config")
 	}
 
-	config, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
+	config, err := clientcmd.LoadFromFile(kubeconfig)
 	if err != nil {
 		return nil, err
 	}
 
-	clusters := &Clusters{config: config}
-	machines := &Machines{config: config}
-	servers := &Servers{config: config}
-	serverClasses := &ServerClasses{config: config}
-	environments := &Environments{config: config}
-	pools := &Pools{config: config}
+	clusters := talos.NewClusters(config)
+	v1 := common.NewCAPI(common.GetScheme())
 
 	return &Backend{
 		Kubernetes: &Kubernetes{
-			Clusters:      clusters,
-			Machines:      machines,
-			Servers:       servers,
-			ServerClasses: serverClasses,
-			Environments:  environments,
-			Pools:         pools,
+			Clusters: clusters,
+			V1:       v1,
 		},
 	}, nil
 }

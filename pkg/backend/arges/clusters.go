@@ -2,40 +2,40 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-package backend
+package arges
 
 import (
 	"context"
 	"sync"
 	"time"
 
-	"github.com/talos-systems/metal-controller-manager/api/v1alpha1"
 	"github.com/wailsapp/wails"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/scale/scheme"
 	toolscache "k8s.io/client-go/tools/cache"
+	"sigs.k8s.io/cluster-api/api/v1alpha3"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 )
 
-type Environments struct {
+type Clusters struct {
 	config *rest.Config
 	log    *wails.CustomLogger
 
-	environments []*v1alpha1.Environment
+	clusters []*v1alpha3.Cluster
 
 	sync.Mutex
 }
 
-func (c *Environments) WailsInit(runtime *wails.Runtime) error {
-	c.log = runtime.Log.New("Environments")
+func (c *Clusters) WailsInit(runtime *wails.Runtime) error {
+	c.log = runtime.Log.New("Clusters")
 
-	ch := make(chan []*v1alpha1.Environment, 100)
+	ch := make(chan []*v1alpha3.Cluster, 100)
 
 	go func() {
 		err := c.watch(ch)
 		if err != nil {
-			c.log.Errorf("Environment watch failed: %v", err)
+			c.log.Errorf("Cluster watch failed: %v", err)
 		}
 	}()
 
@@ -45,33 +45,36 @@ func (c *Environments) WailsInit(runtime *wails.Runtime) error {
 		// the frontend. Remove this sleep once we have a fix.
 		time.Sleep(1 * time.Second)
 
-		for environments := range ch {
-			c.log.Debugf("%+v", environments)
-			runtime.Events.Emit("environments", environments)
+		for clusters := range ch {
+			c.log.Debugf("%+v", clusters)
+			runtime.Events.Emit("clusters", clusters)
 		}
 	}()
 
 	return nil
 }
 
-func (c *Environments) Environments() []*v1alpha1.Environment {
+func (c *Clusters) Clusters() []*v1alpha3.Cluster {
 	c.Lock()
 	defer c.Unlock()
 
-	return c.environments
+	return c.clusters
 }
 
-func (c *Environments) watch(ch chan []*v1alpha1.Environment) error {
+func (c *Clusters) watch(ch chan []*v1alpha3.Cluster) error {
 	s := runtime.NewScheme()
 	_ = scheme.AddToScheme(s)
-	_ = v1alpha1.AddToScheme(s)
+	err := v1alpha3.AddToScheme(s)
+	if err != nil {
+		return err
+	}
 
 	cache, err := cache.New(c.config, cache.Options{Scheme: s})
 	if err != nil {
 		return err
 	}
 
-	informer, err := cache.GetInformer(context.TODO(), &v1alpha1.Environment{})
+	informer, err := cache.GetInformer(context.TODO(), &v1alpha3.Cluster{})
 	if err != nil {
 		return err
 	}
@@ -81,45 +84,45 @@ func (c *Environments) watch(ch chan []*v1alpha1.Environment) error {
 			c.Lock()
 			defer c.Unlock()
 
-			environment := obj.(*v1alpha1.Environment)
+			cluster := obj.(*v1alpha3.Cluster)
 
-			c.environments = append(c.environments, environment)
+			c.clusters = append(c.clusters, cluster)
 
-			ch <- c.environments
+			ch <- c.clusters
 		},
 		UpdateFunc: func(oldObj, newObj interface{}) {
 			c.Lock()
 			defer c.Unlock()
 
-			environment := newObj.(*v1alpha1.Environment)
+			cluster := newObj.(*v1alpha3.Cluster)
 
-			for i, old := range c.environments {
-				if old.UID == environment.UID {
-					c.environments[i] = environment
+			for i, old := range c.clusters {
+				if old.UID == cluster.UID {
+					c.clusters[i] = cluster
 
 					break
 				}
 			}
 
-			ch <- c.environments
+			ch <- c.clusters
 		},
 		DeleteFunc: func(obj interface{}) {
 			c.Lock()
 			defer c.Unlock()
 
-			environment := obj.(*v1alpha1.Environment)
+			cluster := obj.(*v1alpha3.Cluster)
 
-			for i, old := range c.environments {
-				if old.UID == environment.UID {
-					c.environments[i] = c.environments[len(c.environments)-1]
-					c.environments[len(c.environments)-1] = nil
-					c.environments = c.environments[:len(c.environments)-1]
+			for i, old := range c.clusters {
+				if old.UID == cluster.UID {
+					c.clusters[i] = c.clusters[len(c.clusters)-1]
+					c.clusters[len(c.clusters)-1] = nil
+					c.clusters = c.clusters[:len(c.clusters)-1]
 
 					break
 				}
 			}
 
-			ch <- c.environments
+			ch <- c.clusters
 		},
 	})
 
@@ -129,7 +132,7 @@ func (c *Environments) watch(ch chan []*v1alpha1.Environment) error {
 	go cache.Start(stopCh)
 
 	if ok := cache.WaitForCacheSync(stopCh); ok {
-		c.log.Debug("Environment cache synced.")
+		c.log.Debug("Cluster cache synced.")
 	}
 
 	<-stopCh

@@ -23,20 +23,17 @@ func main() {
 	}
 
 	app := wails.CreateApp(&wails.AppConfig{
-		Width:  1024,
-		Height: 768,
-		Title:  "ui",
-		JS:     js,
-		CSS:    css,
-		Colour: "#131313",
+		Width:     1024,
+		Height:    768,
+		Title:     "Talos UI",
+		JS:        js,
+		CSS:       css,
+		Colour:    "#131313",
+		Resizable: true,
 	})
 
 	app.Bind(b.Kubernetes.Clusters)
-	app.Bind(b.Kubernetes.Servers)
-	app.Bind(b.Kubernetes.ServerClasses)
-	app.Bind(b.Kubernetes.Environments)
-	app.Bind(b.Kubernetes.Machines)
-	app.Bind(b.Kubernetes.Pools)
+	app.Bind(b.Kubernetes.V1)
 
 	app.Run()
 }
